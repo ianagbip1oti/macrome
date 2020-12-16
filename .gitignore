@@ -1,4 +1,4 @@
+*.egg-info
 .eggs
 .tox
-*.egg-info
 __pycache__

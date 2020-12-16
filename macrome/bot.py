@@ -1,7 +1,7 @@
 import logging
 import os
-from enum import Enum
 import textwrap
+from enum import Enum
 
 from smalld import SmallD
 
@@ -35,11 +35,13 @@ commands = [
                         "name": "name",
                         "description": "Macro name",
                         "type": Option.string.value,
+                        "required": True,
                     },
                     {
                         "name": "text",
                         "description": "Macro text",
                         "type": Option.string.value,
+                        "required": True,
                     },
                 ],
             },
@@ -52,6 +54,7 @@ commands = [
                         "name": "name",
                         "description": "Macro name",
                         "type": Option.string.value,
+                        "required": True,
                     }
                 ],
             },
@@ -83,7 +86,7 @@ def send_response(interaction, message):
 def add_macro(guild_id, name, text):
     url = f"applications/{application_id}/guilds/{guild_id}/commands"
 
-    smalld.post(
+    cmd = smalld.post(
         url,
         {
             "name": name,
@@ -92,8 +95,20 @@ def add_macro(guild_id, name, text):
     )
 
     guild_macros = macros.get(guild_id, {})
-    guild_macros[name] = text
+    guild_macros[name] = (text, cmd.id)
     macros[guild_id] = guild_macros
+
+
+def delete_macro(guild_id, name):
+    macro = macros.get(guild_id, {}).get(name)
+
+    if not macro:
+        return
+
+    url = f"applications/{application_id}/guilds/{guild_id}/commands/{macro[1]}"
+    smalld.delete(url)
+
+    macros[guild_id].pop(name)
 
 
 def options_to_dict(opts):
@@ -110,10 +125,16 @@ def on_command(interaction):
             if subcommand.name == "add":
                 add_macro(guild_id, **options_to_dict(subcommand.options))
                 send_response(interaction, "Macro added.")
+            elif subcommand.name == "delete":
+                delete_macro(guild_id, **options_to_dict(subcommand.options))
+                send_response(interaction, "Macro deleted.")
+            elif subcommand.name == "list":
+                send_response(interaction, ", ".join(macros.get(guild_id, {}).keys()))
+
     elif command.name in (guild_macros := macros.get(guild_id, {})):
-        send_response(interaction, guild_macros[command.name])
+        send_response(interaction, guild_macros[command.name][0])
     else:
-        send_response(interaction, f"Unknwon macro: {command.name}")
+        send_response(interaction, f"Unkown macro: {command.name}")
 
 
 smalld.run()
