@@ -112,6 +112,8 @@ def on_command(interaction):
                 send_response(interaction, "Macro added.")
     elif command.name in (guild_macros := macros.get(guild_id, {})):
         send_response(interaction, guild_macros[command.name])
+    else:
+        send_response(interaction, f"Unknwon macro: {command.name}")
 
 
 smalld.run()
